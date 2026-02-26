@@ -1,0 +1,13 @@
+langgraph
+langchain
+langchain-community
+litellm
+pyyaml
+pydantic
+pydantic-settings
+arxiv
+scholarly
+pymupdf
+chromadb
+docker
+python-dotenv
