@@ -2,23 +2,29 @@ from typing import Annotated, TypedDict, List, Dict
 import operator
 
 class AgentState(TypedDict):
-    # 用户原始输入
-    input: str
-    # 当前研究上下文
-    research_context: str
-    # 论文列表
-    papers: List[Dict]
-    # 提取的分析结果
-    analysis: List[str]
-    # 创意/想法
+    # --- 核心对话 (展示在左侧) ---
+    chat_history: List[Dict[str, str]] # [{'role': 'user/assistant', 'content': '...'}]
+    
+    # --- 交互决策参数 ---
+    input: str              # 最近一次用户输入
+    year_range: str         
+    refined_keywords: str   
+    selected_paper_ids: List[int] 
+    
+    # --- 研究数据 (展示在右侧) ---
+    papers: List[Dict]      
+    analysis_report: str    
+    sota_table: str         
+    research_plan: str      
     ideas: List[str]
-    # 代码片段
+    
+    # --- 开发与执行 ---
     code: str
-    # 错误日志
     errors: List[str]
-    # 审核意见
-    feedback: str
-    # 任务历史记录 (用于追踪流程)
+    console_output: str     
+    feedback: str           
+    
+    # --- 内部流程控制 (展示在后台日志) ---
     history: Annotated[List[str], operator.add]
-    # 下一个要执行的节点
     next_node: str
+    session_id: str

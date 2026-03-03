@@ -1,54 +1,67 @@
-# 科研助手 (Multi-Agent Research Helper)
+# 科研助手 (Multi-Agent Research Helper) V1.0
 
-基于多智能体架构的科研全流程助手，支持文献搜索、横向对比、灵感启发、代码复现及自动纠错。
+[English](#english) | [中文](#chinese)
 
-## 🌟 核心特性
+---
 
-*   **多智能体协同**: 协调员、侦察员、分析师、创意家、程序员、评论家六大角色各司其职。
-*   **全自动工作流**: 从一个简单的科研想法出发，自动完成搜索到代码生成的全链路。
-*   **自修复代码循环**: 内置执行器与评论家，生成代码后自动运行并根据报错或审阅意见进行迭代。
-*   **长期记忆 (RAG)**: 使用 ChromaDB 存储历史分析结果，支持跨任务知识调用。
-*   **模型无关**: 支持 Kimi, GPT-4o, DeepSeek, Gemini 等多种 API，支持本地模型。
+<a name="english"></a>
 
-## 🚀 快速开始
+### 🚀 Quick Start
+1.  **Environment**: 
+    *   Python 3.10+ is required.
+    *   **Docker (Optional but Recommended)**: Used for safe code execution. If not installed, the system will automatically fall back to local execution.
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Configuration**:
+    *   Copy template: `cp configs/config.yaml.example configs/config.yaml`
+    *   Edit `configs/config.yaml` with your API Keys.
+3.  **Run**:
+    ```bash
+    streamlit run ui.py
+    ```
 
-### 1. 安装依赖
-确保你已安装 Python 3.10+：
+---
+
+<a name="chinese"></a>
+
+### 🚀 详细安装与运行指南
+
+#### 1. 环境准备
+*   **Python**: 建议使用 Python 3.10 或更高版本。
+*   **Docker (可选)**: 
+    *   **作用**: 用于安全地运行 AI 生成的代码，防止对您的电脑造成潜在影响。
+    *   **启用方法**: 只需安装并启动 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 即可。系统会自动检测 Docker 并在必要时后台下载 `python:3.10-slim` 镜像。
+    *   **如果不安装**: 系统会**自动切换到本地运行模式**，您依然可以正常使用所有功能。
+
+#### 2. 安装项目依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置模型 (必须)
+#### 3. 配置 API Key (必须)
+1.  在项目根目录下找到 `configs/config.yaml.example`。
+2.  将其复制并重命名为 `configs/config.yaml`。
+3.  打开该文件，在 `api_key` 处填入您的 Key。
 
-1. 复制项目中的模板文件：
-   ```bash
-   cp configs/config.yaml.example configs/config.yaml
-   ```
-2. 编辑 `configs/config.yaml`，填入你的 API Key 和模型地址。
+#### 4. 启动程序
+我们提供了两种交互方式：
+*   **Web 界面 (推荐)**: 拥有可视化图谱和更好的阅读体验。
+    ```bash
+    streamlit run ui.py
+    ```
+*   **命令行界面 (CLI)**: 适合极简主义者。
+    ```bash
+    python main.py
+    ```
 
-本项目基于 **LiteLLM**，支持绝大多数大模型配置示例：
-*   **Kimi (Moonshot)**: `api_base: "https://api.moonshot.cn/v1"`
-*   **ChatAnywhere**: `api_base: "https://api.chatanywhere.tech/v1"`
+---
 
+## 🧠 Interaction Logic / 交互逻辑
+1.  **Field Scan / 领域扫描**: 输入大方向，系统检索 Arxiv 并生成综述。
+2.  **User Intervention / 人工干预**: 系统暂停，供你查看图谱、指定小方向并选择路径。
+3.  **Iteration / 迭代产出**: 支持代码复现或灵感碰撞。
+4.  **Export / 成果导出**: 侧边栏一键导出完整研究报告。
 
-### 3. 运行助手
-直接运行 `main.py` 并在其中修改你的查询需求：
-```bash
-python main.py
-```
-
-## 📁 项目结构
-
-*   `agents/`: 智能体核心逻辑定义
-*   `utils/`: PDF 处理、Arxiv 搜索、向量数据库、代码执行等工具类
-*   `configs/`: 配置文件目录
-*   `output/`: 自动生成的复现代码存放在 `output/code/`
-*   `data/`: 存储下载的 PDF 和 ChromaDB 数据库
-
-## 🛠️ 测试组件
-你可以通过运行以下脚本验证各模块功能：
-*   `python tests/test_components.py`: 验证搜索、下载、解析全链路。
-*   `python tests/test_memory.py`: 验证 RAG 向量检索。
-
-## 📜 许可证
-个人使用免费，商业用途需授权。详见 `LICENSE` 文件。
+## 📜 License / 许可证
+Free for personal use. Commercial use requires authorization. / 个人使用免费，商业用途需授权。

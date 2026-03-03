@@ -11,3 +11,4 @@ pymupdf
 chromadb
 docker
 python-dotenv
+streamlit

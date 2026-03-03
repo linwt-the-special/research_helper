@@ -8,48 +8,55 @@ class CoordinatorAgent(BaseAgent):
         super().__init__(name="coordinator")
 
     def plan(self, state: AgentState) -> AgentState:
-        """
-        根据用户输入制定研究计划，并检索长期记忆
-        """
-        # --- 新增：检索长期记忆 ---
-        print(f"--- [Coordinator] 正在检索长期记忆... ---")
-        memories = vector_db.query(state["input"], n_results=1)
-        past_findings = ""
-        if memories and memories["documents"] and memories["documents"][0]:
-            past_findings = "\n【历史研究参考】:\n" + memories["documents"][0][0][:1000]
-            print(f"--- [Coordinator] 发现相关历史记录，已加入上下文。 ---")
+        current_next = state.get("next_node")
+        if current_next in ["scout", "analyst", "coder", "creative", "executor"] and current_next != "coordinator":
+            return state
 
-        system_prompt = """你是一个高水平科研团队的协调员。
-你的任务是分析用户的科研需求，并决定下一步应该执行什么任务。
-
-关键原则：
-1. 如果 state 中没有任何论文数据 (papers 列表为空)，你必须首先执行 'scout'。
-2. 你可以参考提供的【历史研究参考】来优化你的决策。
-
-可选任务: 'scout', 'analyst', 'coder', 'creative'。
-
-请以 JSON 格式输出：
-{{
-  "reasoning": "你的分析逻辑",
-  "next_node": "scout/analyst/coder/creative",
-  "context_summary": "对用户需求的简要总结"
-}}
-"""
-        user_input = f"当前状态: 论文数={len(state.get('papers', []))}\n用户需求: {state['input']}\n{past_findings}"
+        user_msg = state.get("input", "").lower()
         
-        response_text = self.call_llm(user_input, system_message=system_prompt)
+        # 快捷解析
+        if "复现" in user_msg or "reproduce" in user_msg:
+            state["path"], state["next_node"] = "reproduce", "coder"
+            return state
+        if "讨论" in user_msg or "灵感" in user_msg:
+            state["path"], state["next_node"] = "brainstorm", "creative"
+            return state
+        if "满意" in user_msg or "运行" in user_msg:
+            state["next_node"] = "executor"
+            return state
+
+        if state.get("papers"):
+            return self._parse_user_command(state, state["input"])
         
+        return self._initial_planning(state)
+
+    def _initial_planning(self, state: AgentState) -> AgentState:
+        print(f"--- [Coordinator] 执行任务规划... ---")
+        system_prompt = "分析需求。无论文选'scout'，已有论文选'analyst'。只输出JSON: {'next_node': 'scout'}"
         try:
-            cleaned_text = response_text.replace("```json", "").replace("```", "").strip()
-            plan_data = json.loads(cleaned_text)
-            
-            state["next_node"] = plan_data.get("next_node", "scout")
-            state["research_context"] = plan_data.get("context_summary", "")
-            state["history"].append(f"Coordinator 计划: {plan_data.get('reasoning')}")
-            
-        except Exception as e:
-            state["next_node"] = "scout"
-            state["history"].append("Coordinator 计划解析失败，默认转入 Scout。")
-            
+            resp = self.call_llm(state["input"], system_message=system_prompt)
+            data = self.parse_json_robustly(resp)
+            state["next_node"] = data.get("next_node", "scout")
+        except: state["next_node"] = "scout"
         return state
 
+    def _parse_user_command(self, state: AgentState, command: str) -> AgentState:
+        # 确保 LLM 严格输出合法的节点 ID
+        system_prompt = """分析用户指令。
+必须输出 JSON 格式：{"path": "reproduce/brainstorm", "next_node": "coder/creative/executor"}"""
+        context = f"指令: {command}"
+        try:
+            resp = self.call_llm(context, system_message=system_prompt)
+            data = self.parse_json_robustly(resp)
+            
+            # 严格校验 next_node
+            raw_node = data.get("next_node", "end")
+            if "coder" in raw_node: state["next_node"] = "coder"
+            elif "creative" in raw_node: state["next_node"] = "creative"
+            elif "executor" in raw_node: state["next_node"] = "executor"
+            else: state["next_node"] = "wait_feedback"
+            
+            state["path"] = data.get("path", state.get("path", "reproduce"))
+        except:
+            state["next_node"] = "wait_feedback"
+        return state
